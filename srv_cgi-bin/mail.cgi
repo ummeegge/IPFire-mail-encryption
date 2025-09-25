@@ -116,8 +116,8 @@ if ($action eq "Save") {
 
         # Store authentication settings
         if ($cgiparams{'txt_mailuser'} && $cgiparams{'txt_mailpass'}) {
-            $auth{'AUTHNAME'} = $cgiparams{'txt_mailuser'};
-            $auth{'AUTHPASS'} = $cgiparams{'txt_mailpass'};
+            $auth{'AUTHNAME'} = &Header::escape($cgiparams{'txt_mailuser'});
+            $auth{'AUTHPASS'} = &Header::escape($cgiparams{'txt_mailpass'});
             $auth{'AUTHHOST'} = $cgiparams{'txt_mailserver'};
             print TXT1 "$auth{'AUTHNAME'}|$auth{'AUTHHOST'}:$auth{'AUTHPASS'}\n";
         }
@@ -660,3 +660,4 @@ sub error {
         &Header::closebox();
     }
 }
+
