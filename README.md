@@ -4,27 +4,30 @@ This addon enhances IPFire's `mail.cgi` with GPG encryption and masquerade suppo
 
 ## Features
 
-- **GPG Encryption**: Send encrypted emails using GPG keys, configured via WUI or command line.
+- **GPG Key Management**: Upload, view, and delete GPG keys in the WUI, currently only RSA, ECC is not supported with `gpg (GnuPG) 1.4.23`
+- **GPG Encryption**: Send encrypted emails using GPG keys via command line or scripts, configured via WUI.
 - **Masquerade Option**: Set an alternative sender address (email or hostname) for outgoing emails.
-- **GPG Key Management**: Upload, view, and delete GPG keys in the WUI.
 - **Test Mail**: Send unencrypted or encrypted test emails from the WUI.
 - **Command-Line Support**: Pipe logs or messages to `/usr/sbin/sendmail.gpg` for encrypted delivery.
-- **Debugging**: Detailed logs in `/var/log/httpd/error_log` and `/tmp/sent_email_*.eml`.
+- **Debugging**: Detailed logs in `/var/log/httpd/error_log` and `/var/log/mail`.
 
 ## Prerequisites
 
-- IPFire 2.27+ (Core Update 185 or later recommended).
-- GPG (`/usr/bin/gpg`), `MIME::Lite`, and `sendmail.dma` already installed.
-- GPG key directory: `/var/ipfire/dma/encryption` (must exist).
+- IPFire with Core version >= 94
+- GPG (`/usr/bin/gpg`), `MIME::Lite`, and `sendmail.dma` are part of the core system and should be installed
+- GPG key directory: `/var/ipfire/dma/encryption` (must exist)
+- GPG keyring: Installed under `/var/ipfire/dma/encryption`
 
 ## Installation
 
-Manual installation (installer script coming soon):
+Manual installation:
 1. Most important, make a Backup of the existing /srv/web/ipfire/cgi-bin/mail.cgi !!!
 2. Copy `src/cgi-bin/mail.cgi` to `/srv/web/ipfire/cgi-bin/mail.cgi`.
 3. Copy `src/bin/sendmail.gpg.pl` to `/usr/sbin/sendmail.gpg.pl`.
 4. Set permissions: `chown nobody:nobody /srv/web/ipfire/cgi-bin/mail.cgi /usr/sbin/sendmail.gpg.pl && chmod 755 /srv/web/ipfire/cgi-bin/mail.cgi /usr/sbin/sendmail.gpg.pl`.
 5. Create GPG directory: `mkdir -p /var/ipfire/dma/encryption && chown nobody:nobody /var/ipfire/dma/encryption && chmod 700 /var/ipfire/dma/encryption`.
+
+an [in- uninstaller / updater](https://github.com/ummeegge/IPFire-mail-encryption/blob/main/installer.sh) is meanwhile available.
 
 ## Usage
 
@@ -34,22 +37,22 @@ Manual installation (installer script coming soon):
   - **Mail Service**: Enable via "Activate Mail Service" checkbox.
   - **Sender/Recipient**: Set email addresses.
   - **Masquerade Address**: Optional email or hostname (e.g., `your_email@your_provider.com`).
-  - **Encryption**: Enable GPG encryption and select a GPG key.
+  - **Encryption**: Enable GPG encryption via `Encrypt Mail GPG Key` and press `save` and select and upload an GPG key.
   - **GPG Key Management**: Upload keys, view fingerprints/emails/expiry dates, or delete keys.
   - **Test Mail**: Send unencrypted or encrypted test emails.
-- Settings are saved to `/var/ipfire/dma/mail.conf` via the "Save" button.
+  - Settings are saved to `/var/ipfire/dma/mail.conf` via the "Save" button.
 
 ### Command Line
 - Send encrypted emails (requires `ENCRYPT=on` and `GPG_KEY` in `mail.conf`):
 
 ```bash
-  echo -e "Subject: Log\n\n$(grep error /var/log/messages)" | /usr/sbin/sendmail.gpg recipient@domain.com
+echo -e "Subject: Error Logs\n\n$(grep error /var/log/messages)" | /usr/sbin/sendmail.gpg recipient@domain.com
 ```
 
 - Example with custom message:
 
 ```bash
-echo -e "Subject: Test\n\nHallo verschlüsselte Welt!" | /usr/sbin/sendmail.gpg recipient@domain.com
+echo -e "Subject: Test\n\nHello encrypted World!" | /usr/sbin/sendmail.gpg recipient@domain.com
 ```
 
 ### Configuration File (mail.conf)
@@ -59,12 +62,14 @@ Some new fields will be present with the new CGI after importing an OpenPGP key,
 
 - Fields:
 
+```
 `USEMAIL`: on or off (enables mail service)
 `SENDER`: Sender email (e.g., user@example.com)
 `RECIPIENT`: Recipient email (e.g., user@example.com)
 `MASQUERADE`: Optional email to override the envelope (e.g., user@example.com)
 `ENCRYPT`: on or off (enables GPG encryption)
 `GPG_KEY`: GPG key fingerprint (e.g., 0F5C265157C9FDF3C90DA979A881FCB1B0E5161E)
+```
 
 - Settings will be automatically updated via WUI "Save" button.
 
@@ -79,6 +84,8 @@ Some new fields will be present with the new CGI after importing an OpenPGP key,
 - Missing GnuPG keyring under `/var/ipfire/dma/encryption`
 - Invalid GPG key: Verify key fingerprint and recipient match
 - Permissions: Ensure `nobody:nobody` ownership and correct permissions
+- After in- or uninstallation, use always the Web UIs `Save` button to restore the appropriate settings
+- By in or uninstalling the new CGI, it is a know issue that the `Mail Password` needs to be re-entered
 
 ## License
 
