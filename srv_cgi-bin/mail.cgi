@@ -524,4 +524,4 @@ sub info {
         print "<div class='base'>$infomessage</div>\n";
         &Header::closebox();
     }
-
+}
