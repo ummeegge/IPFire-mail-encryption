@@ -363,9 +363,10 @@ sub import_key {
                 warn "DEBUG: import_key: Found fingerprint: $fingerprint\n";
             }
             if ($gpg_version =~ /^1\.4/) {
-                if ($fields[0] eq 'pub' && $fields[8] && $fields[8] ne '' && $fields[8] =~ /${recipient_escaped}/) {
+                # Fix: UID is in $fields[9] for GPG 1.4 (not $fields[8])
+                if ($fields[0] eq 'pub' && $fields[9] && $fields[9] ne '' && $fields[9] =~ /${recipient_escaped}/) {
                     $match = 1;
-                    warn "DEBUG: import_key: GPG 1.4 - Matched UID in pub: $fields[8]\n";
+                    warn "DEBUG: import_key: GPG 1.4 - Matched UID in pub: $fields[9]\n";
                 }
             } else {
                 if ($fields[0] eq 'uid' && $fields[9] && $fields[9] =~ /${recipient_escaped}/) {
@@ -441,8 +442,9 @@ sub list_keys {
                     warn "DEBUG: list_keys: GPG 1.4 - Pushed key: $current_key->{fingerprint}, UID: $current_key->{uid}, Expiry: $current_key->{expiry}\n";
                 }
                 my $exp = $fields[6] // '';
-                my $uid = ($fields[8] && $fields[8] ne '') ? $fields[8] : 'Unknown';
-                warn "DEBUG: list_keys: GPG 1.4 - Raw UID: '$fields[8]', Parsed UID: '$uid'\n";
+                # Fix: UID is in $fields[9] for GPG 1.4
+                my $uid = ($fields[9] && $fields[9] ne '') ? $fields[9] : 'Unknown';
+                warn "DEBUG: list_keys: GPG 1.4 - Raw UID: '$fields[9]', Parsed UID: '$uid'\n";
                 my $expiry;
                 my $timestamp;
                 if ($exp =~ /^(\d{4})-(\d{2})-(\d{2})$/) {
@@ -477,10 +479,7 @@ sub list_keys {
             }
         } else {
             if ($fields[0] eq 'pub') {
-                if ($current_key && $current_key->{fingerprint} && $current_key->{uid} ne 'Unknown') {
-                    push @keys, { %$current_key };
-                    warn "DEBUG: list_keys: GPG 2.4 - Pushed key: $current_key->{fingerprint}, UID: $current_key->{uid}, Expiry: $current_key->{expiry}\n";
-                }
+                # Fix: Do not push in pub; wait for uid
                 my $exp = $fields[6] // '';
                 my $expiry = ($exp && $exp =~ /^\d+$/) ? strftime("%Y-%m-%d", localtime($exp)) : 'Never';
                 $current_key = { fingerprint => '', uid => 'Unknown', expiry => $expiry, expired => 0, expires_soon => 0 };
@@ -496,13 +495,16 @@ sub list_keys {
             } elsif ($fields[0] eq 'uid' && $current_key) {
                 $current_key->{uid} = $fields[9] || 'Unknown';
                 warn "DEBUG: list_keys: GPG 2.4 - Found UID: $current_key->{uid}\n";
+                # Fix: Push only here, after UID is set
+                if ($current_key->{fingerprint} && $current_key->{uid} ne 'Unknown') {
+                    push @keys, { %$current_key };
+                    warn "DEBUG: list_keys: GPG 2.4 - Pushed key: $current_key->{fingerprint}, UID: $current_key->{uid}, Expiry: $current_key->{expiry}\n";
+                    $current_key = undef;
+                }
             } elsif ($fields[0] eq 'fpr' && $current_key) {
                 $current_key->{fingerprint} = $fields[9];
                 warn "DEBUG: list_keys: GPG 2.4 - Found fingerprint: $current_key->{fingerprint}\n";
-                if ($current_key->{uid} ne 'Unknown') {
-                    push @keys, { %$current_key };
-                    warn "DEBUG: list_keys: GPG 2.4 - Pushed key: $current_key->{fingerprint}, UID: $current_key->{uid}, Expiry: $current_key->{expiry}\n";
-                }
+                # No push here – wait for uid
             }
         }
     }
@@ -525,3 +527,4 @@ sub info {
         &Header::closebox();
     }
 }
+
