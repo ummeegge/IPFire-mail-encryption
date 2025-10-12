@@ -111,8 +111,8 @@ if ($action eq "$Lang::tr{'save'}") { #SaveButton
         $mail{'GPG_KEY'} = $cgiparams{'GPG_KEY'} || '';
 
         if ($cgiparams{'txt_mailuser'} && $cgiparams{'txt_mailpass'}) {
-            $auth{'AUTHNAME'} = &Header::escape($cgiparams{'txt_mailuser'});
-            $auth{'AUTHPASS'} = &Header::escape($cgiparams{'txt_mailpass'});
+            $auth{'AUTHNAME'} = &Header::escape($cgiparams{'txt_mailuser'});  # Escape only for username (if special caracters are needed)
+            $auth{'AUTHPASS'} = $cgiparams{'txt_mailpass'};                  # No escape for password, use raw data!
             $auth{'AUTHHOST'} = $cgiparams{'txt_mailserver'};
             print TXT1 "$auth{'AUTHNAME'}|$auth{'AUTHHOST'}:$auth{'AUTHPASS'}\n";
         }
@@ -527,4 +527,3 @@ sub info {
         &Header::closebox();
     }
 }
-
